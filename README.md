@@ -1,4 +1,4 @@
-# My project is to examine whether or not the Alabama Department of Environmental Management discriminates in the siting of landfills.
+My project is to examine whether or not the Alabama Department of Environmental Management discriminates in the siting of landfills.
 # Before starting the spatial analysis, I need to change the scanned PDFs of landfill permits to text files, find the variables I need, and write them to a table.
 # Here is what I have done for the project:
 # 1. Download all the 168 permits and rename them;
