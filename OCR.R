@@ -106,14 +106,12 @@ landfills.shp <- readOGR("Alabama Landfills.kml", "MSW Facilities")
 landfills.sf <- st_as_sf(landfills.shp, coords = c("lon", "lat"), crs = 4269)
 ## convert google maps coordinate system (4269) into census - AL (2759)
 landfills.sf <- st_transform(landfills.sf, 2759)
-data17.sf <- st_transform(data17.sf, 2759) #Error message: can't find data17.sf
+data17.sf <- st_transform(data17.sf, 2759) 
 ## create 1 mile buffer
 landfill_buff <- st_buffer(landfills.sf$geometry, 1609.34)
 
 ### plot the map with landfills
-  ggplot(data = data17) +
-  geom_sf()
-  #geom_sf(data = data17.sf, aes(fill= ejind17, color=ejind17)) +
+{ggplot() +
+  geom_sf(data = data17.sf, aes(fill= nonwhite17, color=nonwhite17)) +
   geom_sf(data = landfills.sf, color = 'black') +
-  geom_sf(data = landfill_buff, color = 'red')
-
+  geom_sf(data = landfill_buff, color = 'red')}
