@@ -5,8 +5,12 @@
 library(tesseract)
 if (!require("pacman")) install.packages("pacman")
 p_load(textreadr, tesseract, stringr)
+library(pacman)
+p_load(tidyverse, data.table, ggplot2, rgdal, sf, RecordLinkage)
+library(tidycensus)
 
 getwd()
+# Change that to the directory on your own computer
 setwd("/Users/chenzhinan/Desktop/EDS")
 
 #change file names
@@ -71,6 +75,45 @@ for (mytext in mycsv){
   
 }
 
-
 # Write the data to a csv file
 write.table(permitinfo, file = "MyData.csv")
+
+# Get census data from US census bureau
+census_api_key("18938f278197578ee47a8dad71141344868d8deb", install = TRUE, overwrite = TRUE)
+readRenviron("~/.Renviron")
+options(tigris_use_cache = TRUE)
+v<-load_variables(2017, "acs5", cache = TRUE)
+
+## race, get total population and white alone (not hispanic or latino)
+race17 <- get_acs(state = "AL", geography = "block group", variables = c("B03002_001", "B03002_003"), year = 2017, geometry = TRUE, cache_table = TRUE, output = "wide")
+race17 <- mutate(race17, nonwhite17 = 1 - B03002_003E/B03002_001E)
+
+## income for 2017 add up all hh income < $25k year
+inc17 <- get_acs(state = "AL", geography = "block group", variables = c("B19001_001", "B19001_002", "B19001_003", "B19001_004", "B19001_005"), year = 2017, cache_table = TRUE, output = "wide")
+inc17 <- mutate(inc17, underpov17 = B19001_002E + B19001_003E + B19001_004E + B19001_005E)
+inc17 <- mutate(inc17, percunderpov17 = underpov17/B19001_001E)
+
+data17 <- merge(race17, inc17, by = "GEOID", type = "full")  
+data17 <- mutate(data17, ejind17 = percunderpov17 + nonwhite17)
+
+### plot map of census blocks
+ggplot(data = data17)  +
+  geom_sf()
+
+### read in google my maps layer
+landfills.shp <- readOGR("MSW Facilities.kml", "MSW Facilities")
+## convert google maps sp geometry into sf geometry
+landfills.sf <- st_as_sf(landfills.shp, coords = c("lon", "lat"), crs = 4269)
+## convert google maps coordinate system (4269) into census - AL (2759)
+landfills.sf <- st_transform(landfills.sf, 2759)
+data17.sf <- st_transform(data17.sf, 2759)
+## create 1 mile buffer
+landfill_buff <- st_buffer(landfills.sf$geometry, 1609.34)
+
+### plot - landfilss in black, buffers in red
+{ggplot(data = data17) +
+  geom_sf()
+  #geom_sf(data = data17.sf, aes(fill= ejind17, color=ejind17)) +
+  geom_sf(data = landfills.sf, color = 'black') +
+  geom_sf(data = landfill_buff, color = 'red')}
+
